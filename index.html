@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwachhMap - Clean Streets. Clear Roads. One Tap at a Time.</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/sidebar.css">
+    <link rel="stylesheet" href="styles/footer.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar-overlay"></div>
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="index.html" class="logo" aria-label="SwachhMap Home">
+                <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                <span>SwachhMap</span>
+            </a>
+            <button class="close-sidebar" aria-label="Close menu">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="#leaderboard"><i class="fas fa-trophy"></i> Leaderboard</a></li>
+            <li><a href="#ngos"><i class="fas fa-hands-helping"></i> Top NGOs</a></li>
+            <li><a href="photos.html"><i class="fas fa-images"></i> Photos Posted</a></li>
+            <li><a href="#donate"><i class="fas fa-donate"></i> Donate</a></li>
+            <li><a href="report.html" class="btn btn-primary"><i class="fas fa-flag"></i> Report an Issue</a></li>
+            <li><a href="admin/login.html" class="btn btn-outline"><i class="fas fa-lock"></i> Admin Login</a></li>
+        </ul>
+    </nav>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <button class="open-sidebar" aria-label="Open menu">
+            <i class="fas fa-bars"></i>
+        </button>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Clean Streets. Clear Roads. One Tap at a Time.</h1>
+                <p>Report garbage dumps, potholes, and other civic issues in your area. Help make your city cleaner and safer.</p>
+                <div class="cta-buttons">
+                    <a href="report.html" class="btn btn-primary">Report an Issue</a>
+                    <a href="map.html" class="btn btn-outline">View Issues Map</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="assets/hero-illustration.svg" alt="SwachhMap in action">
+            </div>
+        </div>
+    </header>
+
+    <!-- Live Counters Section -->
+    <section class="counters">
+        <div class="container">
+            <div class="counter-grid">
+                <div class="counter-card">
+                    <i class="fas fa-flag"></i>
+                    <div class="counter" data-target="12500">0</div>
+                    <p>Issues Reported</p>
+                </div>
+                <div class="counter-card">
+                    <i class="fas fa-check-circle"></i>
+                    <div class="counter" data-target="9800">0</div>
+                    <p>Issues Resolved</p>
+                </div>
+                <div class="counter-card">
+                    <i class="fas fa-users"></i>
+                    <div class="counter" data-target="3200">0</div>
+                    <p>Active Volunteers</p>
+                </div>
+                <div class="counter-card">
+                    <i class="fas fa-chart-line"></i>
+                    <div class="counter" data-target="78">0</div>
+                    <p>% Resolution Rate</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Leaderboard Section -->
+    <section id="leaderboard" class="leaderboard">
+        <div class="container">
+            <h2>Top Contributors</h2>
+            <div class="leaderboard-grid">
+                <div class="leaderboard-card">
+                    <div class="rank">1</div>
+                    <div class="user-info">
+                        <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Top Contributor">
+                        <div>
+                            <h3>Rahul Sharma</h3>
+                            <p>Mumbai, Maharashtra</p>
+                        </div>
+                    </div>
+                    <div class="points">1,245 pts</div>
+                </div>
+                <div class="leaderboard-card">
+                    <div class="rank">2</div>
+                    <div class="user-info">
+                        <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Top Contributor">
+                        <div>
+                            <h3>Priya Patel</h3>
+                            <p>Ahmedabad, Gujarat</p>
+                        </div>
+                    </div>
+                    <div class="points">1,120 pts</div>
+                </div>
+                <div class="leaderboard-card">
+                    <div class="rank">3</div>
+                    <div class="user-info">
+                        <img src="https://randomuser.me/api/portraits/men/67.jpg" alt="Top Contributor">
+                        <div>
+                            <h3>Arjun Kumar</h3>
+                            <p>Bangalore, Karnataka</p>
+                        </div>
+                    </div>
+                    <div class="points">987 pts</div>
+                </div>
+                <a href="#" class="view-all">View Full Leaderboard <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Top NGOs Section -->
+    <section id="ngos" class="ngos">
+        <div class="container">
+            <h2>Partnered NGOs</h2>
+            <div class="ngo-grid">
+                <div class="ngo-card">
+                    <img src="https://via.placeholder.com/100" alt="NGO Logo" class="ngo-logo">
+                    <h3>Clean India Foundation</h3>
+                    <p>Active in 12 cities, 50,000+ cleanups</p>
+                    <a href="#" class="btn btn-outline">Learn More</a>
+                </div>
+                <div class="ngo-card">
+                    <img src="https://via.placeholder.com/100" alt="NGO Logo" class="ngo-logo">
+                    <h3>Green Warriors</h3>
+                    <p>Specializing in waste management solutions</p>
+                    <a href="#" class="btn btn-outline">Learn More</a>
+                </div>
+                <div class="ngo-card">
+                    <img src="https://via.placeholder.com/100" alt="NGO Logo" class="ngo-logo">
+                    <h3>Eco Guardians</h3>
+                    <p>Community-driven clean-up initiatives</p>
+                    <a href="#" class="btn btn-outline">Learn More</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Donation Section -->
+    <section id="donate" class="donate">
+        <div class="container">
+            <div class="donate-content">
+                <h2>Support Our Mission</h2>
+                <p>Your donation helps us maintain the platform, support NGOs, and organize clean-up drives across the country.</p>
+                <div class="donation-options">
+                    <button class="donation-amount">₹500</button>
+                    <button class="donation-amount active">₹1,000</button>
+                    <button class="donation-amount">₹2,000</button>
+                    <input type="number" placeholder="Custom Amount" class="custom-amount">
+                </div>
+                <button class="btn btn-primary">Donate Now</button>
+                <p class="donation-note">All donations are tax-exempt under 80G</p>
+            </div>
+            <div class="donation-impact">
+                <h3>Your Impact</h3>
+                <ul>
+                    <li><i class="fas fa-check"></i> ₹500 helps clean 100 sq.ft. of public space</li>
+                    <li><i class="fas fa-check"></i> ₹1,000 provides cleaning kits for 5 volunteers</li>
+                    <li><i class="fas fa-check"></i> ₹5,000 sponsors a community clean-up event</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-main">
+                <!-- First Part: Logo and Description -->
+                <div class="footer-about">
+                    <div class="footer-logo">
+                        <i class="fas fa-trash-alt"></i>
+                        <span>SwachhMap</span>
+                    </div>
+                    <p class="footer-description">Empowering citizens to report and track civic issues for a cleaner, better India.</p>
+                    <div class="social-links">
+                        <a href="https://twitter.com/" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="https://facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+                        <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+
+                <!-- Second Part: Navigation Links -->
+                <div class="footer-navigation">
+                    <div class="footer-links">
+                        <h4>Quick Links</h4>
+                        <ul>
+                            <li><a href="index.html">Home</a></li>
+                            <li><a href="index.html#leaderboard">Leaderboard</a></li>
+                            <li><a href="index.html#ngos">Our Partners</a></li>
+                            <li><a href="index.html#donate">Donate</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-links">
+                        <h4>Resources</h4>
+                        <ul>
+                            <li><a href="how-it-works.html">How It Works</a></li>
+                            <li><a href="stories.html">Success Stories</a></li>
+                            <li><a href="get-involved.html">Get Involved</a></li>
+                            <li><a href="faq.html">FAQ</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-links">
+                        <h4>Legal</h4>
+                        <ul>
+                            <li><a href="privacy-policy.html">Privacy Policy</a></li>
+                            <li><a href="terms.html">Terms of Service</a></li>
+                            <li><a href="cookie-policy.html">Cookie Policy</a></li>
+                            <li><a href="contact.html">Contact Us</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 SwachhMap. Making India cleaner, one report at a time.</p>
+            </div>
+        </div>
+    </footer>
+    </div> <!-- End main-content -->
+
+    <script src="scripts/sidebar.js"></script>
+    <script src="scripts/main.js"></script>
+</body>
+</html>

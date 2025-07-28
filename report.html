@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report an Issue - SwachhMap</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/sidebar.css">
+    <link rel="stylesheet" href="styles/report.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar-overlay"></div>
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="index.html" class="logo" aria-label="SwachhMap Home">
+                <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                <span>SwachhMap</span>
+            </a>
+            <button class="close-sidebar" aria-label="Close menu">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="index.html#leaderboard"><i class="fas fa-trophy"></i> Leaderboard</a></li>
+            <li><a href="index.html#ngos"><i class="fas fa-hands-helping"></i> Top NGOs</a></li>
+            <li><a href="photos.html"><i class="fas fa-images"></i> Photos Posted</a></li>
+            <li><a href="index.html#donate"><i class="fas fa-donate"></i> Donate</a></li>
+            <li><a href="report.html" class="btn btn-primary"><i class="fas fa-flag"></i> Report an Issue</a></li>
+            <li><a href="admin/login.html" class="btn btn-outline"><i class="fas fa-lock"></i> Admin Login</a></li>
+        </ul>
+    </nav>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <button class="open-sidebar" aria-label="Open menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <a href="index.html" class="back-button">
+            <i class="fas fa-arrow-left"></i> Back to Home
+        </a>
+
+    <!-- Report Form Section -->
+    <section class="report-section">
+        <div class="container">
+            <h1>Report an Issue</h1>
+            <p class="subtitle">Help keep your community clean by reporting garbage dumps or road issues.</p>
+            
+            <form id="report-form" class="report-form">
+                <div class="form-group">
+                    <label for="issue-type">Type of Issue</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="issue-type" value="garbage" checked>
+                            <div class="radio-content">
+                                <i class="fas fa-trash-alt"></i>
+                                <span>Garbage Dump</span>
+                            </div>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="issue-type" value="road">
+                            <div class="radio-content">
+                                <i class="fas fa-road"></i>
+                                <span>Road Damage</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="location">Location</label>
+                    <div id="map" style="height: 300px; border-radius: 8px; margin-top: 10px;"></div>
+                    <small>Click on the map to mark the exact location or use your current location.</small>
+                    <div class="location-buttons">
+                        <button type="button" id="use-location" class="btn btn-outline">
+                            <i class="fas fa-location-arrow"></i> Use My Location
+                        </button>
+                        <button type="button" id="search-location" class="btn btn-outline">
+                            <i class="fas fa-search"></i> Search Location
+                        </button>
+                    </div>
+                    <input type="hidden" id="latitude" name="latitude" required>
+                    <input type="hidden" id="longitude" name="longitude" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="photos">Photos</label>
+                    <div class="upload-area" id="upload-area">
+                        <i class="fas fa-camera"></i>
+                        <p>Click or drag & drop photos here</p>
+                        <input type="file" id="photos" name="photos" accept="image/*" multiple required>
+                    </div>
+                    <div id="preview-container" class="preview-container"></div>
+                </div>
+
+                <div class="form-group">
+                    <div class="description-container">
+                        <label for="description">Description <span class="optional">(Optional)</span></label>
+                        <div class="description-box">
+                            <textarea 
+                                id="description" 
+                                name="description" 
+                                rows="4" 
+                                placeholder="Provide more details about the issue..."
+                                maxlength="500"
+                                data-gramm_editor="false"
+                                spellcheck="true"
+                            ></textarea>
+                            <div class="description-footer">
+                                <div class="word-count"><span id="char-count">0</span>/500 characters</div>
+                                <div class="suggestions">
+                                    <span>Suggestions:</span>
+                                    <button type="button" class="suggestion-tag" data-text="Near landmark or address">Near landmark</button>
+                                    <button type="button" class="suggestion-tag" data-text="Size of the affected area">Size</button>
+                                    <button type="button" class="suggestion-tag" data-text="How long it's been there">Duration</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="severity">Severity</label>
+                    <select id="severity" name="severity" class="form-control">
+                        <option value="low">Low - Minor issue</option>
+                        <option value="medium" selected>Medium - Needs attention</option>
+                        <option value="high">High - Serious hazard</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Submit Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>SwachhMap</span>
+                </div>
+                <div class="footer-links">
+                    <a href="#">About Us</a>
+                    <a href="#">Contact</a>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                </div>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 SwachhMap. Making India cleaner, one report at a time.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="scripts/sidebar.js"></script>
+    <script src="scripts/report.js"></script>
+</body>
+</html>

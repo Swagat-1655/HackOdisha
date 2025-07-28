@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photos Posted - SwachhMap</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/sidebar.css">
+    <link rel="stylesheet" href="styles/photos.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar-overlay"></div>
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="index.html" class="logo" aria-label="SwachhMap Home">
+                <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                <span>SwachhMap</span>
+            </a>
+            <button class="close-sidebar" aria-label="Close menu">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="index.html#leaderboard"><i class="fas fa-trophy"></i> Leaderboard</a></li>
+            <li><a href="index.html#ngos"><i class="fas fa-hands-helping"></i> Top NGOs</a></li>
+            <li><a href="photos.html" class="active"><i class="fas fa-images"></i> Photos Posted</a></li>
+            <li><a href="report.html" class="btn btn-primary"><i class="fas fa-flag"></i> Report an Issue</a></li>
+            <li><a href="admin/login.html" class="btn btn-outline"><i class="fas fa-lock"></i> Admin Login</a></li>
+        </ul>
+    </nav>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <button class="open-sidebar" aria-label="Open menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <a href="index.html" class="back-button">
+            <i class="fas fa-arrow-left"></i> Back to Home
+        </a>
+
+        <div class="container">
+            <h1>Photos Posted</h1>
+            <p class="subtitle">View all the photos posted by our community members</p>
+            
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="category">Category:</label>
+                    <select id="category" class="filter-select">
+                        <option value="all">All Categories</option>
+                        <option value="garbage">Garbage Dumps</option>
+                        <option value="road">Road Damage</option>
+                        <option value="before">Before Cleanup</option>
+                        <option value="after">After Cleanup</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="sort">Sort By:</label>
+                    <select id="sort" class="filter-select">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="most-liked">Most Liked</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="photos-grid" id="photos-grid">
+                <!-- Photos will be loaded here via JavaScript -->
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading photos...
+                </div>
+            </div>
+
+            <div class="load-more">
+                <button id="load-more-btn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Load More
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="scripts/sidebar.js"></script>
+    <script src="scripts/photos.js"></script>
+</body>
+</html>
