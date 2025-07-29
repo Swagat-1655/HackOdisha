@@ -69,7 +69,7 @@
     color: var(--text-primary);
     text-decoration: none;
     transition: all 0.3s ease;
-    border-left: 3px solid transparent;
+    padding-left: 3px;
 }
 
 .sidebar-nav a i {

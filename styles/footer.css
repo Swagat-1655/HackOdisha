@@ -1,94 +1,44 @@
-/* Footer Styles */
+/* ==========================================================================
+   FOOTER STYLES
+   ========================================================================== */
 
+/* Main footer styles */
 footer {
     background-color: var(--surface);
-    color: var(--text-secondary);
-    padding: 40px 0 0;
-    margin-top: 60px;
+    color: var(--text-primary);
+    padding: 60px 0 20px;
     border-top: 1px solid var(--border);
 }
 
-.footer-main {
+/* Footer content container */
+.footer-content {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: space-between;
-    gap: 40px;
-    margin-bottom: 40px;
+    align-items: flex-start;
+    max-width: 1200px;
+    margin: 0 auto 40px;
+    padding: 0 2.5rem 0 3rem;
+    box-sizing: border-box;
+    gap: 20px;
 }
 
-/* Footer About Section */
-.footer-about {
-    flex: 1 1 300px;
-    max-width: 400px;
-}
-
-.footer-logo {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.footer-logo i {
-    font-size: 1.8rem;
-    color: var(--primary);
-    margin-right: 10px;
-}
-
-.footer-logo span {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.footer-description {
-    margin-bottom: 20px;
-    line-height: 1.6;
-    color: var(--text-secondary);
-}
-
-/* Social Links */
-.social-links {
-    display: flex;
-    gap: 15px;
-    margin-top: 20px;
-}
-
-.social-links a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.05);
-    color: var(--text-secondary);
-    transition: all 0.3s ease;
-}
-
-.social-links a:hover {
-    background-color: var(--primary);
-    color: var(--text-primary);
-    transform: translateY(-3px);
-}
-
-/* Footer Navigation */
-.footer-navigation {
-    flex: 2 1 600px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 30px;
-    justify-content: space-between;
-}
-
+/* Ensure all sections stay in a single row */
+.footer-about,
 .footer-links {
-    flex: 1 1 160px;
-    min-width: 150px;
+    flex: 1;
+    min-width: 0; /* Allows flex items to shrink below their minimum content size */
+}
+
+/* Footer sections */
+.footer-about {
+    padding-right: 20px;
 }
 
 .footer-links h4 {
-    color: var(--text-primary);
-    font-size: 1.1rem;
+    color: white;
     margin-bottom: 20px;
+    font-size: 1.1rem;
     position: relative;
     padding-bottom: 10px;
 }
@@ -103,70 +53,167 @@ footer {
     background: var(--primary);
 }
 
+/* Footer logo */
+.footer-logo {
+    display: flex;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 15px;
+}
+
+.footer-logo i {
+    margin-right: 10px;
+    font-size: 1.8rem;
+    color: var(--primary);
+}
+
+/* Footer links section */
+.footer-links {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
 .footer-links ul {
     list-style: none;
     padding: 0;
     margin: 0;
-}
-
-.footer-links li {
-    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .footer-links a {
     color: var(--text-secondary);
-    text-decoration: none;
     transition: all 0.3s ease;
-    display: block;
-    padding: 5px 0;
 }
 
 .footer-links a:hover {
     color: var(--primary);
-    padding-left: 5px;
+    padding-left: 8px;
 }
 
-/* Footer Bottom */
+/* Social links */
+.social-links {
+    display: flex;
+    gap: 15px;
+}
+
+.social-links a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    background-color: var(--background);
+    border-radius: 50%;
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border);
+}
+
+.social-links a:hover {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    transform: translateY(-3px) scale(1.1);
+    border-color: transparent;
+    color: #000;
+}
+
+/* Footer bottom */
 .footer-bottom {
-    border-top: 1px solid var(--border);
-    padding: 20px 0;
     text-align: center;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
     font-size: 0.9rem;
     color: var(--text-secondary);
+    margin-top: 30px;
 }
 
-/* Responsive Styles */
-@media (max-width: 992px) {
-    .footer-main {
+/* ==========================================================================
+   RESPONSIVE STYLES
+   ========================================================================== */
+
+/* Ensure full width on all pages */
+body > *:not(footer) {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Tablets */
+@media (max-width: 1200px) {
+    .footer-content {
+        flex-wrap: wrap;
         gap: 30px;
     }
     
-    .footer-navigation {
-        gap: 20px;
-    }
-}
-
-@media (max-width: 768px) {
-    .footer-main {
-        flex-direction: column;
-    }
-    
-    .footer-about {
-        max-width: 100%;
-    }
-    
-    .footer-navigation {
-        flex-direction: column;
-        gap: 30px;
-    }
-    
+    .footer-about,
     .footer-links {
-        flex: 1 1 100%;
+        flex: 0 0 calc(25% - 30px);
+    }
+    
+    .footer-links h4::after {
+        left: 0;
+        transform: none;
     }
 }
 
+/* Mobile devices */
+@media (max-width: 768px) {
+    .footer-content {
+        flex-wrap: wrap;
+        gap: 20px;
+        padding: 0 1.5rem;
+    }
+    
+    .footer-about,
+    .footer-links {
+        flex: 0 0 calc(50% - 20px);
+    }
+}
+
+/* Small phones */
 @media (max-width: 480px) {
+    .footer-content {
+        flex-direction: column;
+        gap: 25px;
+    }
+    
+    .footer-about,
+    .footer-links {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .footer-links h4::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    .footer-links ul {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.8rem 2rem;
+    }
+    
+    .social-links {
+        justify-content: center;
+    }
+    
+    .footer-bottom {
+        padding: 1.5rem 1rem;
+    }
+}
+
+/* Small phones */
+@media (max-width: 576px) {
     .footer-bottom p {
+        margin: 0;
+        color: var(--footer-text);
         font-size: 0.85rem;
         line-height: 1.5;
     }

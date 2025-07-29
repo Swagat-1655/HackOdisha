@@ -608,3 +608,223 @@ select.form-control:focus {
 .success-message i {
     font-size: 1.2rem;
 }
+/* ==========================================================================
+   FOOTER STYLES
+   ========================================================================== */
+
+/* Main footer styles */
+footer {
+    background-color: var(--surface);
+    color: var(--text-primary);
+    padding: 60px 0 20px;
+    border-top: 1px solid var(--border);
+}
+
+/* Footer content container */
+.footer-content {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    max-width: 1200px;
+    margin: 0 auto 40px;
+    padding: 0 2.5rem 0 3rem;
+    box-sizing: border-box;
+    gap: 20px;
+}
+
+/* Ensure all sections stay in a single row */
+.footer-about,
+.footer-links {
+    flex: 1;
+    min-width: 0; /* Allows flex items to shrink below their minimum content size */
+}
+
+/* Footer sections */
+.footer-about {
+    padding-right: 20px;
+}
+
+.footer-links h4 {
+    color: white;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.footer-links h4::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 40px;
+    height: 2px;
+    background: var(--primary);
+}
+
+/* Footer logo */
+.footer-logo {
+    display: flex;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 15px;
+}
+
+.footer-logo i {
+    margin-right: 10px;
+    font-size: 1.8rem;
+    color: var(--primary);
+}
+
+/* Footer links section */
+.footer-links {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.footer-links ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.footer-links a {
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: var(--primary);
+    padding-left: 8px;
+}
+
+/* Social links */
+.social-links {
+    display: flex;
+    gap: 15px;
+}
+
+.social-links a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    background-color: var(--background);
+    border-radius: 50%;
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border);
+}
+
+.social-links a:hover {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    transform: translateY(-3px) scale(1.1);
+    border-color: transparent;
+    color: #000;
+}
+
+/* Footer bottom */
+.footer-bottom {
+    text-align: center;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 30px;
+}
+
+/* ==========================================================================
+   RESPONSIVE STYLES
+   ========================================================================== */
+
+/* Ensure full width on all pages */
+body > *:not(footer) {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Tablets */
+@media (max-width: 1200px) {
+    .footer-content {
+        flex-wrap: wrap;
+        gap: 30px;
+    }
+    
+    .footer-about,
+    .footer-links {
+        flex: 0 0 calc(25% - 30px);
+    }
+    
+    .footer-links h4::after {
+        left: 0;
+        transform: none;
+    }
+}
+
+/* Mobile devices */
+@media (max-width: 768px) {
+    .footer-content {
+        flex-wrap: wrap;
+        gap: 20px;
+        padding: 0 1.5rem;
+    }
+    
+    .footer-about,
+    .footer-links {
+        flex: 0 0 calc(50% - 20px);
+    }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+    .footer-content {
+        flex-direction: column;
+        gap: 25px;
+    }
+    
+    .footer-about,
+    .footer-links {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .footer-links h4::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    .footer-links ul {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.8rem 2rem;
+    }
+    
+    .social-links {
+        justify-content: center;
+    }
+    
+    .footer-bottom {
+        padding: 1.5rem 1rem;
+    }
+}
+
+/* Small phones */
+@media (max-width: 576px) {
+    .footer-bottom p {
+        margin: 0;
+        color: var(--footer-text);
+        font-size: 0.85rem;
+        line-height: 1.5;
+    }
+}
