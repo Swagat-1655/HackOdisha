@@ -33,8 +33,14 @@
                         <button class="nav-btn" data-page="browse">Browse</button>
                         <button class="nav-btn" data-page="services">Services</button>
                         <button class="nav-btn" data-page="post">Sell Item</button>
+                        <button class="nav-btn" data-page="profile">Profile</button>
                         <button class="nav-btn" data-page="chat">Messages</button>
                     </nav>
+                    
+                    <!-- Sign In Button (shown when not logged in) -->
+                    <button class="btn btn--outline" id="headerSignInBtn" onclick="showSignInModal('Welcome to CampusXchange! Please sign in to get started.')" style="display: none;">
+                        Sign In
+                    </button>
                     
                     <!-- Google-style Account Menu -->
                     <div class="account-menu">
@@ -120,8 +126,33 @@
             <!-- Featured Listings -->
             <div class="featured-section">
                 <div class="container">
-                    <h2>Recent Listings</h2>
-                    <div class="products-grid" id="featuredProducts"></div>
+                    <div class="featured-header">
+                        <h2>Recent Listings</h2>
+                        <div class="scroll-controls">
+                            <div class="scroll-indicator">
+                                <span>← Scroll to see more →</span>
+                            </div>
+                            <div class="auto-scroll-controls">
+                                <button class="scroll-btn" id="pauseScrollBtn" title="Pause auto-scroll">
+                                    <span class="pause-icon">⏸️</span>
+                                </button>
+                                <button class="scroll-btn" id="playScrollBtn" title="Resume auto-scroll" style="display: none;">
+                                    <span class="play-icon">▶️</span>
+                                </button>
+                                <div class="scroll-speed-control">
+                                    <label for="scrollSpeed">Speed:</label>
+                                    <select id="scrollSpeed" class="speed-select">
+                                        <option value="slow">Slow</option>
+                                        <option value="normal" selected>Normal</option>
+                                        <option value="fast">Fast</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="products-scroll-container">
+                        <div class="products-scroll" id="featuredProducts"></div>
+                    </div>
                 </div>
             </div>
 
@@ -139,6 +170,8 @@
             <div class="container">
                 <div class="browse-header">
                     <h1>Marketplace</h1>
+                </div>
+                <div class="filters-section">
                     <div class="filters">
                         <select class="form-control" id="categoryFilter">
                             <option value="">All Categories</option>
@@ -163,6 +196,7 @@
                 <div class="services-header">
                     <h1>Freelance Services</h1>
                     <p>Find talented students to help with your projects</p>
+                    <button class="btn btn--primary" onclick="openServicePostModal()">Offer Your Services</button>
                 </div>
                 
                 <div class="services-categories">
@@ -231,14 +265,69 @@
                         
                         <div class="image-upload">
                             <label class="form-label">Photos</label>
-                            <div class="upload-area">
-                                <p>📷 Click to upload photos (Max 5)</p>
-                                <input type="file" multiple accept="image/*" style="display: none;">
+                            <div class="upload-area" id="uploadArea">
+                                <div class="upload-content">
+                                    <div class="upload-icon">📷</div>
+                                    <p>Click to upload photos (Max 5)</p>
+                                    <p class="upload-hint">Drag & drop images here or click to browse</p>
+                                </div>
+                                <input type="file" multiple accept="image/*" id="imageInput" style="display: none;">
                             </div>
+                            <div class="image-preview-container" id="imagePreviewContainer"></div>
                         </div>
                         
                         <button type="submit" class="btn btn--primary btn--full-width">Post Item</button>
                     </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- User Profile Page -->
+        <section id="profilePage" class="page">
+            <div class="container">
+                <div class="profile-container">
+                    <div class="profile-header">
+                        <div class="profile-avatar-large">
+                            <div class="avatar-circle-large" id="profileAvatar">JD</div>
+                            <button class="btn btn--outline btn--sm" id="editProfileBtn">Edit Profile</button>
+                        </div>
+                        <div class="profile-info">
+                            <h1 id="profileName">John Doe</h1>
+                            <p id="profileEmail">john.doe@college.edu</p>
+                            <div class="profile-stats">
+                                <div class="stat">
+                                    <span class="stat-number" id="listingsCount">12</span>
+                                    <span class="stat-label">Listings</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number" id="salesCount">8</span>
+                                    <span class="stat-label">Sales</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number" id="ratingCount">4.8</span>
+                                    <span class="stat-label">Rating</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-tabs">
+                        <button class="tab-btn active" data-tab="listings">My Listings</button>
+                        <button class="tab-btn" data-tab="wishlist">Wishlist</button>
+                        <button class="tab-btn" data-tab="reviews">Reviews</button>
+                    </div>
+                    
+                    <div class="profile-content">
+                        <div class="tab-content active" id="listingsTab">
+                            <div class="products-grid" id="userListings"></div>
+                        </div>
+                        <div class="tab-content" id="wishlistTab">
+                            <div class="products-grid" id="wishlistItems"></div>
+                        </div>
+                        <div class="tab-content" id="reviewsTab">
+                            <div class="reviews-container" id="reviewsContainer"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -312,6 +401,153 @@
             </div>
         </div>
     </div>
+
+    <!-- Floating Action Button -->
+    <button class="fab" id="fabBtn" title="Quick Actions">
+        <span>+</span>
+    </button>
+
+    <!-- FAB Menu -->
+    <div class="fab-menu hidden" id="fabMenu">
+        <button class="fab-item" data-action="post">
+            <span class="fab-icon">📝</span>
+            <span class="fab-label">Sell Item</span>
+        </button>
+        <button class="fab-item" data-action="search">
+            <span class="fab-icon">🔍</span>
+            <span class="fab-label">Search</span>
+        </button>
+        <button class="fab-item" data-action="chat">
+            <span class="fab-icon">💬</span>
+            <span class="fab-label">Messages</span>
+        </button>
+    </div>
+
+    <!-- Enhanced Search Modal -->
+    <div id="searchModal" class="modal hidden">
+        <div class="modal-content search-modal">
+            <div class="modal-header">
+                <h2>Advanced Search</h2>
+                <button class="modal-close" id="closeSearchModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="search-filters">
+                    <div class="form-group">
+                        <label class="form-label">Search Term</label>
+                        <input type="text" class="form-control" id="advancedSearchInput" placeholder="What are you looking for?">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select class="form-control" id="advancedCategoryFilter">
+                            <option value="">All Categories</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Price Range</label>
+                        <div class="price-range">
+                            <input type="number" class="form-control" id="minPrice" placeholder="Min">
+                            <span>to</span>
+                            <input type="number" class="form-control" id="maxPrice" placeholder="Max">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Condition</label>
+                        <select class="form-control" id="advancedConditionFilter">
+                            <option value="">Any Condition</option>
+                            <option value="Like New">Like New</option>
+                            <option value="Excellent">Excellent</option>
+                            <option value="Good">Good</option>
+                            <option value="Fair">Fair</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="search-suggestions" id="searchSuggestions"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--outline" id="clearSearchBtn">Clear</button>
+                <button class="btn btn--primary" id="performAdvancedSearch">Search</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Post Modal -->
+    <div id="servicePostModal" class="modal hidden">
+        <div class="modal-content service-post-modal">
+            <div class="modal-header">
+                <h2>Offer Your Services</h2>
+                <button class="modal-close" id="closeServicePostModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form class="service-post-form" id="servicePostForm">
+                    <div class="form-group">
+                        <label class="form-label">Service Title *</label>
+                        <input type="text" class="form-control" id="serviceTitle" required placeholder="e.g., Professional Video Editing">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Category *</label>
+                        <select class="form-control" id="serviceCategory" required>
+                            <option value="">Select Category</option>
+                            <option value="Video Editing">Video Editing</option>
+                            <option value="Content Writing">Content Writing</option>
+                            <option value="Graphic Design">Graphic Design</option>
+                            <option value="Web Development">Web Development</option>
+                            <option value="Tutoring">Tutoring</option>
+                            <option value="Photography">Photography</option>
+                            <option value="Data Entry">Data Entry</option>
+                            <option value="Translation">Translation</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Description *</label>
+                        <textarea class="form-control" id="serviceDescription" rows="4" required placeholder="Describe your service in detail..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Skills *</label>
+                        <input type="text" class="form-control" id="serviceSkills" required placeholder="e.g., Premiere Pro, After Effects, Photoshop">
+                        <small class="form-hint">Separate skills with commas</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Experience *</label>
+                        <select class="form-control" id="serviceExperience" required>
+                            <option value="">Select Experience Level</option>
+                            <option value="Beginner">Beginner (0-1 years)</option>
+                            <option value="Intermediate">Intermediate (1-3 years)</option>
+                            <option value="Advanced">Advanced (3-5 years)</option>
+                            <option value="Expert">Expert (5+ years)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Delivery Time *</label>
+                        <select class="form-control" id="serviceDelivery" required>
+                            <option value="">Select Delivery Time</option>
+                            <option value="Same day">Same day</option>
+                            <option value="1-2 days">1-2 days</option>
+                            <option value="3-5 days">3-5 days</option>
+                            <option value="1 week">1 week</option>
+                            <option value="2+ weeks">2+ weeks</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Portfolio Link (Optional)</label>
+                        <input type="url" class="form-control" id="servicePortfolio" placeholder="https://yourportfolio.com">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--outline" id="cancelServicePost">Cancel</button>
+                <button class="btn btn--primary" id="submitServicePost">Post Service</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="notification-container"></div>
 
     <script src="app.js"></script>
 </body>
