@@ -283,7 +283,7 @@
                     <form class="post-form" id="postForm">
                         <div class="form-group">
                             <label class="form-label">Item Title *</label>
-                            <input type="text" class="form-control" required>
+                            <input type="text" class="form-control" id="postTitle" required>
                         </div>
                         
                         <div class="form-group">
@@ -293,7 +293,7 @@
                         
                         <div class="form-group">
                             <label class="form-label">Condition *</label>
-                            <select class="form-control" required>
+                            <select class="form-control" id="postCondition" required>
                                 <option value="Like New">Like New</option>
                                 <option value="Excellent">Excellent</option>
                                 <option value="Good">Good</option>
@@ -303,17 +303,17 @@
                         
                         <div class="form-group">
                             <label class="form-label">Price (₹) *</label>
-                            <input type="number" class="form-control" required>
+                            <input type="number" class="form-control" id="postPrice" required>
                         </div>
                         
                         <div class="form-group">
                             <label class="form-label">Original Price (₹)</label>
-                            <input type="number" class="form-control">
+                            <input type="number" class="form-control" id="postOriginalPrice">
                         </div>
                         
                         <div class="form-group">
                             <label class="form-label">Description *</label>
-                            <textarea class="form-control" rows="4" required></textarea>
+                            <textarea class="form-control" rows="4" id="postDescription" required></textarea>
                         </div>
                         
                         <div class="form-group">
@@ -683,6 +683,8 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20250905030000"></script>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <script src="api.js?v=20250905030001"></script>
+    <script src="app.js?v=20250905030002"></script>
 </body>
 </html>

@@ -1,4 +1,12 @@
 // Application Data
+// Define activeFilters object to store filter values
+const activeFilters = {
+    category: '',
+    condition: '',
+    price: Infinity,
+    query: ''
+};
+
 const appData = {
     "categories": [
       {"name": "Books & Notes", "icon": "📚", "count": 245},
@@ -286,6 +294,10 @@ const appData = {
       setupProfilePage();
       setupServicePosting();
       updateLoginState();
+      setupLazyLoading(); // Setup lazy loading for images
+      
+      // Initialize socket.io connection for real-time messaging
+      initializeSocketConnection();
       
       // Check for existing authentication
       if (validateToken()) {
@@ -562,18 +574,65 @@ const appData = {
   }
   
   // Account Management Functions
-  function updateAccountUI() {
-      if (isSignedIn && currentUser) {
-          // Update avatar with user initials
-          const avatarCircle = document.querySelector('.avatar-circle');
-          const avatarLarge = document.querySelector('.avatar-large');
-          const userName = document.querySelector('.user-name');
-          const userEmail = document.querySelector('.user-email');
-          
-          if (avatarCircle) avatarCircle.textContent = currentUser.initials;
-          if (avatarLarge) avatarLarge.textContent = currentUser.initials;
-          if (userName) userName.textContent = currentUser.name;
-          if (userEmail) userEmail.textContent = currentUser.email;
+  async function updateAccountUI() {
+      if (API.Auth.isAuthenticated()) {
+          try {
+              // Try to get user profile from API
+              const profile = await API.Auth.getProfile();
+              
+              // Update avatar with user initials
+              const avatarCircle = document.querySelector('.avatar-circle');
+              const avatarLarge = document.querySelector('.avatar-large');
+              const userName = document.querySelector('.user-name');
+              const userEmail = document.querySelector('.user-email');
+              
+              // Calculate initials from name
+              const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('') : 'U';
+              
+              if (avatarCircle) avatarCircle.textContent = initials;
+              if (avatarLarge) avatarLarge.textContent = initials;
+              if (userName) userName.textContent = profile.name || 'User';
+              if (userEmail) userEmail.textContent = profile.email || '';
+              
+              // Update global currentUser
+              currentUser = {
+                  ...profile,
+                  initials: initials
+              };
+              isSignedIn = true;
+          } catch (error) {
+              console.error('Error fetching user profile:', error);
+              
+              // Fallback to localStorage user data
+              const user = API.Auth.getCurrentUser();
+              if (user) {
+                  // Calculate initials from name
+                  const initials = user.name ? user.name.split(' ').map(n => n[0]).join('') : 'U';
+                  
+                  const avatarCircle = document.querySelector('.avatar-circle');
+                  const avatarLarge = document.querySelector('.avatar-large');
+                  const userName = document.querySelector('.user-name');
+                  const userEmail = document.querySelector('.user-email');
+                  
+                  if (avatarCircle) avatarCircle.textContent = initials;
+                  if (avatarLarge) avatarLarge.textContent = initials;
+                  if (userName) userName.textContent = user.name || 'User';
+                  if (userEmail) userEmail.textContent = user.email || '';
+                  
+                  // Update global currentUser
+                  currentUser = {
+                      ...user,
+                      initials: initials
+                  };
+                  isSignedIn = true;
+              } else {
+                  isSignedIn = false;
+                  currentUser = null;
+              }
+          }
+      } else {
+          isSignedIn = false;
+          currentUser = null;
       }
   }
   
@@ -639,12 +698,19 @@ const appData = {
   }
   
   function storeAuthToken(token) {
-      localStorage.setItem('authToken', token);
+      // Use the proper API storage method
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify({
+          name: parseJWT(token).name,
+          email: parseJWT(token).email,
+          college: parseJWT(token).college
+      }));
       authToken = token;
   }
   
   function getStoredToken() {
-      const token = localStorage.getItem('authToken');
+      // Use the proper API storage key
+      const token = localStorage.getItem('token');
       if (token) {
           authToken = token;
           return token;
@@ -653,7 +719,8 @@ const appData = {
   }
   
   function clearAuthToken() {
-      localStorage.removeItem('authToken');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       authToken = null;
   }
   
@@ -667,7 +734,7 @@ const appData = {
       // Check if token is expired (simple check)
       const now = Date.now() / 1000;
       if (payload.exp && payload.exp < now) {
-          clearAuthToken();
+          API.Auth.logout(); // Use the proper API method to clear authentication
           return false;
       }
       
@@ -958,25 +1025,50 @@ const appData = {
   }
   
   function handleSignOut() {
-      isSignedIn = false;
-      currentUser = null;
-      clearAuthToken();
-      showNotification('Successfully signed out!', 'info');
-      
-      // Update UI to show logged out state
-      updateLoginState();
-      
-      // Navigate to home page
-      navigateToPage('home');
-  }
+    isSignedIn = false;
+    currentUser = null;
+    
+    // Clear auth token from storage
+    clearAuthToken();
+    
+    // Call API with proper error handling
+    API.Auth.logout()
+        .then(() => {
+            showNotification('Successfully signed out!', 'success');
+        })
+        .catch(error => {
+            console.error('Error during sign out:', error);
+            // Still proceed with local logout even if API fails
+            showNotification('Signed out locally, but server sync failed', 'warning');
+        })
+        .finally(() => {
+            // Update UI to show logged out state
+            updateLoginState();
+            
+            // Navigate to home page
+            navigateToPage('home');
+        });
+}
   
   // Update login state UI
   function updateLoginState() {
       const accountAvatar = document.getElementById('accountAvatar');
       const userSection = document.getElementById('userSection');
       const headerSignInBtn = document.getElementById('headerSignInBtn');
+      const signInOption = document.getElementById('signInOption');
       
-      if (isSignedIn && currentUser) {
+      // Check authentication status from API service
+      const isAuthenticated = API.Auth.isAuthenticated();
+      const user = API.Auth.getCurrentUser();
+      
+      if (isAuthenticated && user) {
+          // Update global state
+          isSignedIn = true;
+          currentUser = {
+              ...user,
+              initials: user.name ? user.name.split(' ').map(n => n[0]).join('') : 'U'
+          };
+          
           // Show account avatar
           if (accountAvatar) {
               accountAvatar.style.display = 'flex';
@@ -989,11 +1081,20 @@ const appData = {
               userSection.style.display = 'block';
           }
           
+          // Hide sign in option in dropdown
+          if (signInOption) {
+              signInOption.style.display = 'none';
+          }
+          
           // Hide sign in button
           if (headerSignInBtn) {
               headerSignInBtn.style.display = 'none';
           }
       } else {
+          // Update global state
+          isSignedIn = false;
+          currentUser = null;
+          
           // Hide account avatar, show sign in button
           if (accountAvatar) {
               accountAvatar.style.display = 'none';
@@ -1002,6 +1103,11 @@ const appData = {
           // Hide user section in dropdown
           if (userSection) {
               userSection.style.display = 'none';
+          }
+          
+          // Show sign in option in dropdown
+          if (signInOption) {
+              signInOption.style.display = 'block';
           }
           
           // Show sign in button
@@ -1097,28 +1203,114 @@ const appData = {
       }
   }
   
-  function renderFeaturedProducts() {
+  async function renderFeaturedProducts() {
       const container = document.getElementById('featuredProducts');
       if (container) {
-          // Show all available listings in recent listings (scrollable)
-          const featuredItems = [...appData.sampleListings];
-          // Duplicate the items for infinite scrolling
-          const duplicatedItems = [...featuredItems, ...featuredItems];
-          container.innerHTML = duplicatedItems.map(product => createProductCard(product)).join('');
-          updateWishlistButtons();
+          // Show loading state
+          container.innerHTML = '<div class="loading-indicator">Loading listings...</div>';
           
-          // Start infinite auto-scroll
-          setTimeout(() => {
-              startAutoScroll();
-          }, 100);
+          try {
+              // Fetch listings from API with a limit to improve performance
+              const listings = await API.Listings.getAll({ limit: 10 });
+              
+              // If no listings found, use sample data as fallback (but limit the number)
+              const featuredItems = listings.length > 0 ? listings.slice(0, 10) : appData.sampleListings.slice(0, 10);
+              
+              // Duplicate the items for infinite scrolling (but limit the total number)
+              const duplicatedItems = [...featuredItems];
+              
+              // Use document fragment for better performance
+              const fragment = document.createDocumentFragment();
+              duplicatedItems.forEach(product => {
+                  const productCard = document.createElement('div');
+                  productCard.innerHTML = createProductCard(product);
+                  fragment.appendChild(productCard.firstElementChild);
+              });
+              
+              container.innerHTML = '';
+              container.appendChild(fragment);
+              updateWishlistButtons();
+              
+              // Refresh lazy loading for new images
+              refreshLazyLoading();
+              
+              // Start infinite auto-scroll with a slight delay
+              setTimeout(() => {
+                  startAutoScroll();
+              }, 300);
+          } catch (error) {
+              console.error('Error fetching listings:', error);
+              // Fallback to sample data if API fails (but limit the number)
+              const featuredItems = appData.sampleListings.slice(0, 10);
+              
+              // Use document fragment for better performance
+              const fragment = document.createDocumentFragment();
+              featuredItems.forEach(product => {
+                  const productCard = document.createElement('div');
+                  productCard.innerHTML = createProductCard(product);
+                  fragment.appendChild(productCard.firstElementChild);
+              });
+              
+              container.innerHTML = '';
+              container.appendChild(fragment);
+              updateWishlistButtons();
+              
+              // Start infinite auto-scroll with a slight delay
+              setTimeout(() => {
+                  startAutoScroll();
+              }, 300);
+          }
       }
   }
   
-  function renderBrowseProducts() {
+  async function renderBrowseProducts() {
       const container = document.getElementById('browseProducts');
       if (container) {
-          container.innerHTML = filteredProducts.map(product => createProductCard(product)).join('');
-          updateWishlistButtons();
+          // Show loading state
+          container.innerHTML = '<div class="loading-indicator">Loading products...</div>';
+          
+          try {
+              // Fetch listings from API with pagination for better performance
+              let products;
+              
+              // Get all listings with pagination
+              products = await API.Listings.getAll({ limit: 20, page: 1 });
+              
+              // If no products found, use sample data as fallback (but limit the number)
+              let filteredProducts = products.length > 0 ? products : appData.sampleListings.slice(0, 20);
+              
+              // Use document fragment for better performance
+              const fragment = document.createDocumentFragment();
+              filteredProducts.forEach(product => {
+                  const productCard = document.createElement('div');
+                  productCard.innerHTML = createProductCard(product);
+                  fragment.appendChild(productCard.firstElementChild);
+              });
+              
+              container.innerHTML = '';
+              container.appendChild(fragment);
+              updateWishlistButtons();
+              
+              // Refresh lazy loading for new images
+              refreshLazyLoading();
+          } catch (error) {
+              console.error('Error fetching products:', error);
+              // Fallback to sample data if API fails
+              const fragment = document.createDocumentFragment();
+              const sampleProducts = appData.sampleListings.slice(0, 20);
+              sampleProducts.forEach(product => {
+                  const productCard = document.createElement('div');
+                  productCard.innerHTML = createProductCard(product);
+                  fragment.appendChild(productCard.firstElementChild);
+              });
+              
+              container.innerHTML = '';
+              container.appendChild(fragment);
+              updateWishlistButtons();
+              
+              // Refresh lazy loading for new images
+              refreshLazyLoading();
+          }
       }
   }
   
@@ -1185,21 +1377,58 @@ const appData = {
   }
   
   function createProductCard(product) {
+      // Handle both API data format and sample data format
+      const id = product._id || product.id;
+      const title = product.title || 'Untitled';
+      const price = product.price || 0;
+      const originalPrice = product.originalPrice || null;
+      const seller = product.seller?.name || product.seller || 'Unknown';
+      const condition = product.condition || 'New';
+      const year = product.year || '';
+      
+      // Use image from API or fallback to emoji for sample data
+      const imageUrl = product.images && product.images.length > 0 ? product.images[0] : null;
+      let imageDisplay;
+      
+      if (imageUrl) {
+          // Check if the image is a full URL, base64 data, or a relative path
+          if (imageUrl.startsWith('data:')) {
+              // Base64 image data
+              imageDisplay = `<img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23cccccc'/%3E%3C/svg%3E" data-src="${imageUrl}" alt="${title}" class="product-img lazy-image">`;
+          } else if (imageUrl.startsWith('http')) {
+              // Full URL
+              imageDisplay = `<img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23cccccc'/%3E%3C/svg%3E" data-src="${imageUrl}" alt="${title}" class="product-img lazy-image">`;
+          } else {
+              // Relative path - prepend API base URL
+              imageDisplay = `<img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23cccccc'/%3E%3C/svg%3E" data-src="http://localhost:3001/${imageUrl}" alt="${title}" class="product-img lazy-image">`;
+          }
+      } else {
+          // Fallback to emoji or provided image
+          imageDisplay = product.image || '📦';
+      }
+      
+      const isWishlisted = wishlist.includes(id);
+      
       return `
-          <div class="product-card" onclick="showProductModal(${product.id})">
-              <div class="product-image">${product.image}</div>
+          <div class="product-card hover-lift" onclick="showProductModal('${id}')">
+              <button class="wishlist-btn ${isWishlisted ? 'active' : ''}" 
+                      data-product-id="${id}" 
+                      onclick="event.stopPropagation(); toggleWishlist('${id}')">
+                  ${isWishlisted ? '❤️' : '🤍'}
+              </button>
+              <div class="product-image">${imageDisplay}</div>
               <div class="product-content">
-                  <div class="product-title">${product.title}</div>
+                  <div class="product-title">${title}</div>
                   <div class="product-price">
-                      <span class="price-current">₹${product.price.toLocaleString()}</span>
-                      ${product.originalPrice ? `<span class="price-original">₹${product.originalPrice.toLocaleString()}</span>` : ''}
+                      <span class="price-current">₹${typeof price === 'number' ? price.toLocaleString() : price}</span>
+                      ${originalPrice ? `<span class="price-original">₹${typeof originalPrice === 'number' ? originalPrice.toLocaleString() : originalPrice}</span>` : ''}
                   </div>
                   <div class="product-seller">
-                      <span class="seller-info">${product.seller || 'You'} ${product.year ? '• ' + product.year : ''}</span>
-                      <span class="product-condition">${product.condition}</span>
+                      <span class="seller-info">${seller || 'You'} ${year ? '• ' + year : ''}</span>
+                      <span class="product-condition">${condition}</span>
                   </div>
                   <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm); margin-top: var(--space-4);">
-                      📍 ${product.location || 'Campus'} • ${product.posted}
+                      📍 ${product.location || 'Campus'} • ${product.posted || 'Recently'}
                   </div>
               </div>
           </div>
@@ -1323,39 +1552,92 @@ const appData = {
       }
   };
   
-  window.showProductModal = function(productId) {
-      const allProducts = [...appData.sampleListings];
-      const product = allProducts.find(p => p.id === productId);
-      if (!product) return;
-  
-      document.getElementById('modalTitle').textContent = product.title;
+  window.showProductModal = async function(productId) {
+      // Show loading state in modal
+      document.getElementById('modalTitle').textContent = 'Loading...';
       document.getElementById('modalBody').innerHTML = `
-          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: var(--space-24); margin-bottom: var(--space-20);">
-              <div style="font-size: 8rem; text-align: center; background: var(--color-bg-1); padding: var(--space-32); border-radius: var(--radius-lg);">
-                  ${product.image}
-              </div>
-              <div>
-                  <div style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--color-primary); margin-bottom: var(--space-8);">
-                      ₹${product.price.toLocaleString()}
-                      ${product.originalPrice ? `<span style="font-size: var(--font-size-lg); color: var(--color-text-secondary); text-decoration: line-through; margin-left: var(--space-8);">₹${product.originalPrice.toLocaleString()}</span>` : ''}
-                  </div>
-                  <div class="status status--success" style="margin-bottom: var(--space-16);">${product.condition}</div>
-                  <div style="margin-bottom: var(--space-12);"><strong>Seller:</strong> ${product.seller}</div>
-                  ${product.year ? `<div style="margin-bottom: var(--space-12);"><strong>Year:</strong> ${product.year}</div>` : ''}
-                  ${product.branch ? `<div style="margin-bottom: var(--space-12);"><strong>Branch:</strong> ${product.branch}</div>` : ''}
-                  <div style="margin-bottom: var(--space-12);"><strong>Location:</strong> ${product.location}</div>
-                  <div style="margin-bottom: var(--space-12);"><strong>Posted:</strong> ${product.posted}</div>
-                  ${product.category ? `<div style="margin-bottom: var(--space-12);"><strong>Category:</strong> ${product.category}</div>` : ''}
-              </div>
-          </div>
-          <div style="background: var(--color-bg-1); padding: var(--space-16); border-radius: var(--radius-base);">
-              <strong>Description:</strong><br>
-              This ${product.title.toLowerCase()} is in ${product.condition.toLowerCase()} condition and perfect for students. Well-maintained and comes with all necessary accessories. Serious buyers only.
+          <div class="loading-indicator" style="text-align: center; padding: var(--space-32);">
+              <div class="loading"></div>
+              <p>Loading product details...</p>
           </div>
       `;
-  
+      
       if (modal) {
           modal.classList.remove('hidden');
+      }
+      
+      try {
+          // Try to fetch product from API first
+          let product;
+          
+          try {
+              product = await API.Listings.getById(productId);
+          } catch (error) {
+              console.error('Error fetching product from API:', error);
+              // Fallback to sample data
+              const allProducts = [...appData.sampleListings];
+              product = allProducts.find(p => p.id == productId || p._id == productId);
+          }
+          
+          if (!product) {
+              throw new Error('Product not found');
+          }
+          
+          // Store the current product for the contact seller button
+          currentProductInModal = product;
+          
+          // Handle both API data format and sample data format
+          const title = product.title || 'Untitled';
+          const price = product.price || 0;
+          const originalPrice = product.originalPrice || null;
+          const condition = product.condition || 'New';
+          const seller = product.seller?.name || product.seller || 'Unknown';
+          const year = product.year || '';
+          const branch = product.branch || '';
+          const location = product.location || 'Campus';
+          const posted = product.posted || 'Recently';
+          const category = product.category || '';
+          const description = product.description || `This ${title.toLowerCase()} is in ${condition.toLowerCase()} condition and perfect for students. Well-maintained and comes with all necessary accessories. Serious buyers only.`;
+          
+          // Use image from API or fallback to emoji for sample data
+          const imageUrl = product.images && product.images.length > 0 ? product.images[0] : null;
+          const imageDisplay = imageUrl 
+              ? `<img src="${imageUrl}" alt="${title}" style="max-width: 100%; max-height: 200px;">` 
+              : product.image || '📦';
+          
+          document.getElementById('modalTitle').textContent = title;
+          document.getElementById('modalBody').innerHTML = `
+              <div style="display: grid; grid-template-columns: 1fr 2fr; gap: var(--space-24); margin-bottom: var(--space-20);">
+                  <div style="font-size: 8rem; text-align: center; background: var(--color-bg-1); padding: var(--space-32); border-radius: var(--radius-lg);">
+                      ${imageDisplay}
+                  </div>
+                  <div>
+                      <div style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--color-primary); margin-bottom: var(--space-8);">
+                          ₹${typeof price === 'number' ? price.toLocaleString() : price}
+                          ${originalPrice ? `<span style="font-size: var(--font-size-lg); color: var(--color-text-secondary); text-decoration: line-through; margin-left: var(--space-8);">₹${typeof originalPrice === 'number' ? originalPrice.toLocaleString() : originalPrice}</span>` : ''}
+                      </div>
+                      <div class="status status--success" style="margin-bottom: var(--space-16);">${condition}</div>
+                      <div style="margin-bottom: var(--space-12);"><strong>Seller:</strong> ${seller}</div>
+                      ${year ? `<div style="margin-bottom: var(--space-12);"><strong>Year:</strong> ${year}</div>` : ''}
+                      ${branch ? `<div style="margin-bottom: var(--space-12);"><strong>Branch:</strong> ${branch}</div>` : ''}
+                      <div style="margin-bottom: var(--space-12);"><strong>Location:</strong> ${location}</div>
+                      <div style="margin-bottom: var(--space-12);"><strong>Posted:</strong> ${posted}</div>
+                      ${category ? `<div style="margin-bottom: var(--space-12);"><strong>Category:</strong> ${category}</div>` : ''}
+                  </div>
+              </div>
+              <div style="background: var(--color-bg-1); padding: var(--space-16); border-radius: var(--radius-base);">
+                  <strong>Description:</strong><br>
+                  ${description}
+              </div>
+          `;
+      } catch (error) {
+          console.error('Error displaying product:', error);
+          document.getElementById('modalTitle').textContent = 'Product Not Found';
+          document.getElementById('modalBody').innerHTML = `
+              <div class="error-message" style="text-align: center; padding: var(--space-32);">
+                  <p>Sorry, the product you're looking for could not be found.</p>
+              </div>
+          `;
       }
   };
   
@@ -1364,27 +1646,110 @@ const appData = {
       if (!currentChat) return;
   
       document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
-      event.target.closest('.chat-item').classList.add('active');
+      if (event && event.target) {
+          const chatItem = event.target.closest('.chat-item');
+          if (chatItem) chatItem.classList.add('active');
+      }
   
       const chatPartnerEl = document.getElementById('chatPartner');
       if (chatPartnerEl) {
           chatPartnerEl.textContent = currentChat.name;
       }
+      
+      // If this is a real chat with a sellerId, load messages from API
+      if (currentChat.isReal && currentChat.sellerId && isSignedIn) {
+          loadMessagesForChat(currentChat.sellerId);
+      } else {
+          // Display existing mock messages
+          displayChatMessages(currentChat.messages);
+      }
+  };
   
+  // Function to load messages for a specific chat
+  async function loadMessagesForChat(userId) {
+      try {
+          const messagesContainer = document.getElementById('chatMessages');
+          if (messagesContainer) {
+              // Show loading indicator
+              messagesContainer.innerHTML = '<div class="loading-indicator">Loading messages...</div>';
+              
+              // Fetch messages from API
+              const messages = await API.Messages.getConversation(userId);
+              console.log('Loaded messages:', messages);
+              
+              if (messages && messages.length > 0) {
+                  // Convert API messages to our format
+                  const formattedMessages = messages.map(msg => ({
+                      text: msg.message,
+                      sent: msg.sender === currentUser?._id,
+                      time: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  }));
+                  
+                  // Update current chat messages
+                  if (currentChat && currentChat.sellerId === userId) {
+                      currentChat.messages = formattedMessages;
+                      displayChatMessages(formattedMessages);
+                  }
+              } else {
+                  // No messages yet
+                  messagesContainer.innerHTML = '<div class="empty-state">No messages yet. Start the conversation!</div>';
+              }
+          }
+      } catch (error) {
+          console.error('Error loading messages:', error);
+          const messagesContainer = document.getElementById('chatMessages');
+          if (messagesContainer) {
+              messagesContainer.innerHTML = '<div class="error-state">Failed to load messages. Please try again.</div>';
+          }
+      }
+  }
+  
+  // Function to display chat messages
+  function displayChatMessages(messages) {
       const messagesContainer = document.getElementById('chatMessages');
       if (messagesContainer) {
-          messagesContainer.innerHTML = currentChat.messages.map(message => `
-              <div class="message ${message.sent ? 'sent' : ''}">
+          // Ensure each message has an ID
+          messages.forEach((message, index) => {
+              if (!message.id) {
+                  message.id = `msg_${Date.now()}_${index}`;
+              }
+          });
+          
+          messagesContainer.innerHTML = messages.map(message => {
+              // Create a properly escaped version of the message text for use in attributes
+              return `
+              <div class="message ${message.sent ? 'sent' : ''}${message.failed ? ' failed' : ''}">
                   <div class="message-bubble">
                       ${message.text}
                       <div style="font-size: var(--font-size-xs); opacity: 0.7; margin-top: var(--space-4);">
-                          ${message.time}
+                          ${message.time} ${message.failed ? '<span style="color: var(--color-error);">• Not delivered</span>' : ''}
                       </div>
                   </div>
+                  ${message.failed ? `<button class="retry-btn" onclick="retryMessage('${message.id}')">Retry</button>` : ''}
               </div>
-          `).join('');
+              `;
+          }).join('');
   
           messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+  }
+  
+  // Function to retry sending a failed message
+  window.retryMessage = function(messageId) {
+      if (!currentChat) return;
+      
+      // Find the failed message by ID
+      const failedMessage = currentChat.messages.find(msg => msg.id === messageId && msg.failed);
+      if (!failedMessage) return;
+      
+      // Remove the failed message
+      currentChat.messages = currentChat.messages.filter(msg => msg.id !== messageId);
+      
+      // Add a new message with the same text
+      const messageInput = document.getElementById('messageInput');
+      if (messageInput) {
+          messageInput.value = failedMessage.text;
+          sendMessage();
       }
   };
   
@@ -1445,11 +1810,77 @@ const appData = {
       closeModalHandler();
   }
   
+  // Store the current product being viewed in the modal
+  let currentProductInModal = null;
+
   function contactSellerHandler() {
       if (!isSignedIn) {
           showSignInModal('Please sign in to contact sellers');
           return;
       }
+      
+      // Create a new chat or find existing one with this seller
+      if (currentProductInModal) {
+          const sellerId = currentProductInModal.seller?.id || currentProductInModal.seller?._id || 'unknown';
+          const sellerName = currentProductInModal.seller?.name || currentProductInModal.seller || 'Unknown Seller';
+          const productTitle = currentProductInModal.title || 'Item';
+          
+          // Check if we already have a chat with this seller
+          let existingChat = chatData.find(chat => chat.sellerId === sellerId);
+          
+          if (!existingChat) {
+              // Create a new chat
+              const newChatId = chatData.length + 1;
+              const newChat = {
+                  id: newChatId,
+                  sellerId: sellerId,
+                  name: sellerName,
+                  lastMessage: `About: ${productTitle}`,
+                  time: 'Just now',
+                  messages: [],
+                  isReal: true
+              };
+              
+              chatData.unshift(newChat);
+              setupChat(); // Refresh the chat list
+              currentChat = newChat;
+              
+              // Send initial message about the product using socket.io
+              if (sellerId !== 'unknown') {
+                  try {
+                      // Initialize socket if not already done
+                      if (!API.Messages.socket) {
+                          API.Messages.init();
+                      }
+                      
+                      // Send message through socket.io
+                      API.Messages.sendMessage(sellerId, `Hi, I'm interested in your listing: ${productTitle}`)
+                          .then(response => {
+                              console.log('Message sent successfully:', response);
+                              // Add the message to the current chat
+                              if (currentChat) {
+                                  currentChat.messages.push({
+                                      id: `msg_${Date.now()}_${currentChat.messages.length}`,
+                                      text: `Hi, I'm interested in your listing: ${productTitle}`,
+                                      sent: true,
+                                      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                  });
+                                  displayChatMessages(currentChat.messages);
+                              }
+                          })
+                          .catch(error => {
+                              console.error('Error sending message:', error);
+                              showNotification('Failed to send message. Please try again.', 'error');
+                          });
+                  } catch (error) {
+                      console.error('Error sending initial message:', error);
+                  }
+              }
+          } else {
+              currentChat = existingChat;
+          }
+      }
+      
       navigateToPage('chat');
       closeModalHandler();
       showSuccessMessage('Redirected to chat. Start your conversation!');
@@ -1466,6 +1897,146 @@ const appData = {
               </div>
           `).join('');
       }
+      
+      // Load real conversations from API if user is signed in
+      if (isSignedIn && currentUser) {
+          loadRealConversations();
+      }
+  }
+  
+  // Function to initialize socket connection
+  function initializeSocketConnection() {
+      // Initialize the socket connection
+      if (API.Messages) {
+          try {
+              // Initialize socket connection
+              const socket = API.Messages.init();
+              console.log('Socket connection initialized successfully');
+              
+              // Join user's room if authenticated
+              if (isSignedIn && currentUser) {
+                  // Get user ID from JWT token payload or user object
+                  const userId = currentUser.userId || currentUser.id;
+                  if (userId) {
+                      socket.emit('join', userId);
+                      console.log('Joined chat room for user:', userId);
+                  }
+              
+              // Set up message listener
+              API.Messages.onMessage(message => {
+                  console.log('New message received:', message);
+                  
+                  // Find the chat or create a new one
+                  let chat = chatData.find(c => 
+                      (c.sellerId === message.sender) || 
+                      (c.sellerId === message.receiver)
+                  );
+                  
+                  if (!chat) {
+                      // Create a new chat entry
+                      const newChatId = chatData.length + 1;
+                      const otherUserId = message.sender === currentUser?._id ? message.receiver : message.sender;
+                      
+                      // Try to get user info from the message object
+                      let userName = 'New Contact';
+                      const userId = currentUser?.userId || currentUser?.id;
+                      if (message.sender === userId && message.receiver_info) {
+                          userName = message.receiver_info.name || 'New Contact';
+                      } else if (message.sender_info) {
+                          userName = message.sender_info.name || 'New Contact';
+                      }
+                      
+                      chat = {
+                          id: newChatId,
+                          sellerId: otherUserId,
+                          name: userName,
+                          lastMessage: message.message,
+                          time: 'Just now',
+                          messages: [],
+                          isReal: true
+                      };
+                      chatData.unshift(chat);
+                  }
+                  
+                  // Add the message to the chat
+                  const userId = currentUser?.userId || currentUser?.id;
+                  chat.messages.push({
+                      id: `msg_${Date.now()}_${chat.messages.length}`,
+                      text: message.message,
+                      sent: message.sender === userId,
+                      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  });
+                  
+                  // Update last message and time
+                  chat.lastMessage = message.message;
+                  chat.time = 'Just now';
+                  
+                  // Update the chat list
+                  setupChat();
+                  
+                  // If this is the current chat, update the messages display
+                  if (currentChat && currentChat.id === chat.id) {
+                      selectChat(chat.id);
+                  }
+                  
+                  // Show notification for new message if not in chat page
+                  if (currentPage !== 'chat') {
+                      showNotification(`New message from ${chat.name}`, 'info');
+                  }
+              });
+          } catch (error) {
+              console.error('Error initializing socket connection:', error);
+          }
+         } else {
+          console.warn('API.Messages is not available');
+      }
+  }
+  
+  // Function to load real conversations from the API
+  async function loadRealConversations() {
+      try {
+          const conversations = await API.Messages.getAllConversations();
+          console.log('Loaded conversations:', conversations);
+          
+          if (conversations && conversations.length > 0) {
+              // Clear mock data if we have real conversations
+              if (chatData.length > 0 && !chatData[0].isReal) {
+                  chatData = [];
+              }
+              
+              // Add real conversations to the chat data
+              conversations.forEach((conversation, index) => {
+                  // Check if this conversation already exists
+                  const existingChat = chatData.find(c => c.sellerId === conversation._id);
+                  
+                  if (!existingChat) {
+                      chatData.push({
+                          id: chatData.length + 1,
+                          sellerId: conversation._id,
+                          name: conversation.name || 'User ' + conversation._id.substring(0, 5),
+                          lastMessage: 'Click to view conversation',
+                          time: 'Recent',
+                          messages: [],
+                          isReal: true
+                      });
+                  }
+              });
+              
+              // Update the chat list
+              const chatList = document.getElementById('chatList');
+              if (chatList) {
+                  chatList.innerHTML = chatData.map(chat => `
+                      <div class="chat-item" onclick="selectChat(${chat.id})">
+                          <div style="font-weight: 600; margin-bottom: var(--space-4);">${chat.name}</div>
+                          <div style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">${chat.lastMessage}</div>
+                          <div style="font-size: var(--font-size-xs); color: var(--color-text-secondary); margin-top: var(--space-2);">${chat.time}</div>
+                      </div>
+                  `).join('');
+              }
+          }
+      } catch (error) {
+          console.error('Error loading conversations:', error);
+      }
   }
   
   function sendMessage() {
@@ -1479,29 +2050,81 @@ const appData = {
       
       const text = messageInput.value.trim();
       if (!text) return;
-  
+      
+      // Add message to UI immediately
+      const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const messageId = `msg_${Date.now()}_${currentChat.messages.length}`;
       currentChat.messages.push({
+          id: messageId,
           text: text,
           sent: true,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          time: currentTime
       });
-  
-      selectChat(currentChat.id);
+      
+      // Update UI
+      displayChatMessages(currentChat.messages);
       messageInput.value = '';
-  
-      setTimeout(() => {
-          if (currentChat) {
-              currentChat.messages.push({
-                  text: "Thanks for your message! I'll get back to you soon.",
-                  sent: false,
-                  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              });
-              selectChat(currentChat.id);
+      
+      try {
+          // Send message via socket.io
+          if (currentChat.sellerId) {
+              console.log('Sending message to:', currentChat.sellerId);
+              
+              // Make sure socket is initialized
+              if (!API.Messages.socket) {
+                  API.Messages.init();
+              }
+              
+              // Update chat's last message and time
+              currentChat.lastMessage = text;
+              currentChat.time = 'Just now';
+              
+              // Update chat list UI
+              setupChat();
+              
+              // Send message through socket.io
+              API.Messages.sendMessage(currentChat.sellerId, text)
+                  .then(response => {
+                      console.log('Message sent successfully', response);
+                  })
+                  .catch(error => {
+                      console.error('Error sending message:', error);
+                      showNotification('Failed to send message. Please try again.', 'error');
+                      
+                      // Mark the message as failed in UI
+                      const lastMessage = currentChat.messages[currentChat.messages.length - 1];
+                      if (lastMessage && lastMessage.text === text) {
+                          lastMessage.failed = true;
+                          // Ensure the message has an ID
+                          if (!lastMessage.id) {
+                              lastMessage.id = `msg_${Date.now()}_failed`;
+                          }
+                          displayChatMessages(currentChat.messages);
+                      }
+                  });
+          } else {
+              console.warn('No seller ID found for this chat');
+              // Fallback to mock response for demo purposes
+              setTimeout(() => {
+                  if (currentChat) {
+                      currentChat.messages.push({
+                          id: `msg_${Date.now()}_response`,
+                          text: "Thanks for your message! I'll get back to you soon.",
+                          sent: false,
+                          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      });
+                      displayChatMessages(currentChat.messages);
+                  }
+              }, 2000);
           }
-      }, 2000);
+      } catch (error) {
+          console.error('Error in sendMessage function:', error);
+          showNotification('Failed to send message. Please try again.', 'error');
+      }
+    }
   }
   
-  function handlePostSubmit(e) {
+  async function handlePostSubmit(e) {
       e.preventDefault();
       
       if (!isSignedIn) {
@@ -1517,25 +2140,49 @@ const appData = {
       submitBtn.innerHTML = '<span class="loading"></span> Posting...';
       submitBtn.disabled = true;
   
-      setTimeout(() => {
-          // Create new item and add to listings
+      try {
+          // Create new item data
           const newItem = {
+              title: document.getElementById('postTitle').value,
+              price: parseInt(document.getElementById('postPrice').value),
+              originalPrice: parseInt(document.getElementById('postOriginalPrice').value) || null,
+              condition: document.getElementById('postCondition').value,
+              location: document.getElementById('locationInput').value || 'Campus',
+              category: document.getElementById('postCategory').value,
+              description: document.getElementById('postDescription').value || `This item is in ${document.getElementById('postCondition').value.toLowerCase()} condition and perfect for students.`
+          };
+          
+          // Create FormData for file uploads
+          const formData = new FormData();
+          
+          // Add all form fields to FormData
+          Object.keys(newItem).forEach(key => {
+              formData.append(key, newItem[key]);
+          });
+          
+          // Add uploaded images to FormData
+          uploadedImages.forEach((img, index) => {
+              formData.append(`images`, img.file);
+          });
+          
+          // Submit to API
+          const response = await API.Listings.create(formData);
+          console.log('Listing created:', response);
+          
+          // Add to local data for immediate display
+          const createdItem = response || {
               id: Date.now(),
-              title: e.target.querySelector('input[type="text"]').value,
-              price: parseInt(e.target.querySelector('input[type="number"]').value),
-              originalPrice: parseInt(e.target.querySelector('input[type="number"]:nth-of-type(2)').value) || null,
-              image: '📦', // Default image for new items
+              ...newItem,
+              images: uploadedImages.map(img => img.url),
               seller: currentUser.name,
               year: 'Current',
               branch: 'Various',
-              condition: e.target.querySelector('select').value,
-              location: document.getElementById('locationInput').value || 'Campus',
-              posted: 'Just now',
-              category: document.getElementById('postCategory').value
+              posted: 'Just now'
           };
+
           
           // Add to the beginning of sample listings
-          appData.sampleListings.unshift(newItem);
+          appData.sampleListings.unshift(createdItem);
           
           // Update filtered products
           filteredProducts = [...appData.sampleListings];
@@ -1552,10 +2199,14 @@ const appData = {
           }
           detectedLocation = null;
           
+          navigateToPage('home');
+      } catch (error) {
+          console.error('Error creating listing:', error);
+          showErrorMessage('Failed to post your item. Please try again.');
+      } finally {
           submitBtn.textContent = originalText;
           submitBtn.disabled = false;
-          navigateToPage('home');
-      }, 2000);
+      }
   }
   
   function populateCategorySelectors() {
@@ -1704,6 +2355,78 @@ const appData = {
   }, 500);
 
   // ===== ENHANCED FEATURES =====
+
+// Lazy loading images
+function setupLazyLoading() {
+    // Create a global observer that can be reused
+    if ('IntersectionObserver' in window) {
+        window.lazyImageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const lazyImage = entry.target;
+                    if (lazyImage.dataset.src) {
+                        lazyImage.src = lazyImage.dataset.src;
+                        lazyImage.classList.remove('lazy-image');
+                        lazyImage.classList.add('loaded');
+                        lazyImageObserver.unobserve(lazyImage);
+                    }
+                }
+            });
+        });
+
+        // Observe all lazy images
+        observeLazyImages();
+        
+        // Set up a mutation observer to detect new images added to the DOM
+        const mutationObserver = new MutationObserver((mutations) => {
+            mutations.forEach(mutation => {
+                if (mutation.type === 'childList') {
+                    observeLazyImages();
+                }
+            });
+        });
+        
+        // Start observing the document for added nodes
+        mutationObserver.observe(document.body, { childList: true, subtree: true });
+    } else {
+        // Fallback for browsers that don't support IntersectionObserver
+        loadAllLazyImages();
+        
+        // Set up a simple polling mechanism to check for new images
+        setInterval(loadAllLazyImages, 2000);
+    }
+}
+
+// Helper function to observe all lazy images
+function observeLazyImages() {
+    if (!window.lazyImageObserver) return;
+    
+    document.querySelectorAll('img.lazy-image:not([data-lazy-observed])').forEach(image => {
+        window.lazyImageObserver.observe(image);
+        image.setAttribute('data-lazy-observed', 'true');
+    });
+}
+
+// Helper function to load all lazy images without IntersectionObserver
+function loadAllLazyImages() {
+    const lazyImages = document.querySelectorAll('img.lazy-image:not(.loaded)');
+    lazyImages.forEach(image => {
+        if (image.dataset.src) {
+            image.src = image.dataset.src;
+            image.classList.remove('lazy-image');
+            image.classList.add('loaded');
+        }
+    });
+}
+
+// Function to refresh lazy loading for dynamically added content
+function refreshLazyLoading() {
+    if ('IntersectionObserver' in window && window.lazyImageObserver) {
+        observeLazyImages();
+    } else {
+        loadAllLazyImages();
+    }
+}
 
   // Setup Enhanced Features
   function setupEnhancedFeatures() {
@@ -1910,6 +2633,9 @@ const appData = {
       const tabBtns = document.querySelectorAll('.tab-btn');
       const tabContents = document.querySelectorAll('.tab-content');
       
+      // Load user profile data
+      loadUserProfile();
+      
       tabBtns.forEach(btn => {
           btn.addEventListener('click', () => {
               const tab = btn.dataset.tab;
@@ -1930,6 +2656,48 @@ const appData = {
       // Load initial content
       loadTabContent('listings');
   }
+  
+  // Load user profile data from API
+  async function loadUserProfile() {
+      if (!API.Auth.isAuthenticated()) {
+          // Redirect to home if not logged in
+          navigateToPage('home');
+          showSignInModal();
+          return;
+      }
+      
+      try {
+          // Get profile data from API
+          const profile = await API.Auth.getProfile();
+          
+          // Update profile UI
+          document.getElementById('profileName').textContent = profile.name || 'User';
+          document.getElementById('profileEmail').textContent = profile.email || '';
+          
+          // Set avatar initials
+          const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('') : 'U';
+          document.getElementById('profileAvatar').textContent = initials;
+          
+          // Update stats if available
+          if (profile.stats) {
+              document.getElementById('listingsCount').textContent = profile.stats.listings || '0';
+              document.getElementById('salesCount').textContent = profile.stats.sales || '0';
+              document.getElementById('ratingCount').textContent = profile.stats.rating || '0';
+          }
+      } catch (error) {
+          console.error('Error loading profile:', error);
+          // Use current user data from localStorage as fallback
+          const user = API.Auth.getCurrentUser();
+          if (user) {
+              document.getElementById('profileName').textContent = user.name || 'User';
+              document.getElementById('profileEmail').textContent = user.email || '';
+              
+              // Set avatar initials
+              const initials = user.name ? user.name.split(' ').map(n => n[0]).join('') : 'U';
+              document.getElementById('profileAvatar').textContent = initials;
+          }
+      }
+  }
 
   function loadTabContent(tab) {
       switch(tab) {
@@ -1945,64 +2713,145 @@ const appData = {
       }
   }
 
-  function renderUserListings() {
+  async function renderUserListings() {
       const container = document.getElementById('userListings');
       if (!container) return;
       
-      const userListings = appData.sampleListings.filter(item => item.seller === currentUser.name);
-      container.innerHTML = userListings.map(product => createProductCard(product)).join('');
+      // Show loading state
+      container.innerHTML = '<div class="loading-indicator">Loading your listings...</div>';
+      
+      try {
+          // Fetch user listings from API
+          const userListings = await API.Listings.getMyListings();
+          
+          if (userListings.length > 0) {
+              container.innerHTML = userListings.map(product => createProductCard(product)).join('');
+              // Refresh lazy loading for new images
+              refreshLazyLoading();
+          } else {
+              // No listings found
+              container.innerHTML = '<div class="empty-state">You haven\'t posted any listings yet.</div>';
+          }
+      } catch (error) {
+          console.error('Error fetching user listings:', error);
+          
+          // Fallback to sample data if API fails
+          const fallbackListings = appData.sampleListings.filter(item => item.seller === currentUser?.name);
+          
+          if (fallbackListings.length > 0) {
+              container.innerHTML = fallbackListings.map(product => createProductCard(product)).join('');
+              // Refresh lazy loading for new images
+              refreshLazyLoading();
+          } else {
+              container.innerHTML = '<div class="error-state">Could not load your listings. Please try again later.</div>';
+          }
+      }
   }
 
-  function renderWishlist() {
+  async function renderWishlist() {
       const container = document.getElementById('wishlistItems');
       if (!container) return;
       
-      const wishlistItems = appData.sampleListings.filter(item => wishlist.includes(item.id));
-      container.innerHTML = wishlistItems.map(product => createProductCard(product)).join('');
+      // Show loading state
+      container.innerHTML = '<div class="loading-indicator">Loading your wishlist...</div>';
+      
+      try {
+          // Check if we have a wishlist API endpoint
+          // For now, we'll use the local wishlist array and fetch each item
+          if (wishlist.length > 0) {
+              // Fetch each wishlist item by ID
+              const wishlistPromises = wishlist.map(id => API.Listings.getById(id).catch(() => null));
+              const wishlistResults = await Promise.all(wishlistPromises);
+              
+              // Filter out any failed requests
+              const wishlistItems = wishlistResults.filter(item => item !== null);
+              
+              if (wishlistItems.length > 0) {
+                  container.innerHTML = wishlistItems.map(product => createProductCard(product)).join('');
+                  // Refresh lazy loading for new images
+                  refreshLazyLoading();
+              } else {
+                  container.innerHTML = '<div class="empty-state">Your wishlist is empty.</div>';
+              }
+          } else {
+              container.innerHTML = '<div class="empty-state">Your wishlist is empty.</div>';
+          }
+      } catch (error) {
+          console.error('Error fetching wishlist:', error);
+          
+          // Fallback to sample data if API fails
+          const fallbackItems = appData.sampleListings.filter(item => wishlist.includes(item.id));
+          
+          if (fallbackItems.length > 0) {
+              container.innerHTML = fallbackItems.map(product => createProductCard(product)).join('');
+              // Refresh lazy loading for new images
+              refreshLazyLoading();
+          } else {
+              container.innerHTML = '<div class="error-state">Could not load your wishlist. Please try again later.</div>';
+          }
+      }
   }
 
-  function renderReviews() {
+  async function renderReviews() {
       const container = document.getElementById('reviewsContainer');
       if (!container) return;
       
-      const reviews = [
-          {
-              reviewer: 'Sarah Johnson',
-              rating: 5,
-              date: '2 days ago',
-              text: 'Great seller! Item was exactly as described and delivered quickly.'
-          },
-          {
-              reviewer: 'Mike Chen',
-              rating: 4,
-              date: '1 week ago',
-              text: 'Good communication and fair pricing. Would buy again.'
-          },
-          {
-              reviewer: 'Emily Davis',
-              rating: 5,
-              date: '2 weeks ago',
-              text: 'Excellent condition and fast response. Highly recommended!'
-          }
-      ];
+      // Show loading state
+      container.innerHTML = '<div class="loading-indicator">Loading reviews...</div>';
       
-      container.innerHTML = reviews.map(review => `
-          <div class="review-card">
-              <div class="review-header">
-                  <div class="reviewer-info">
-                      <div class="reviewer-avatar">${review.reviewer.split(' ').map(n => n[0]).join('')}</div>
-                      <div>
-                          <div class="reviewer-name">${review.reviewer}</div>
-                          <div class="review-date">${review.date}</div>
+      try {
+          // Check if we have a reviews API endpoint
+          // For now, we'll use sample reviews as there's no endpoint yet
+          // This would be replaced with an actual API call when available
+          // const reviews = await API.Reviews.getUserReviews();
+          
+          // Sample reviews data
+          const reviews = [
+              {
+                  reviewer: 'Sarah Johnson',
+                  rating: 5,
+                  date: '2 days ago',
+                  text: 'Great seller! Item was exactly as described and delivered quickly.'
+              },
+              {
+                  reviewer: 'Mike Chen',
+                  rating: 4,
+                  date: '1 week ago',
+                  text: 'Good communication and fair pricing. Would buy again.'
+              },
+              {
+                  reviewer: 'Emily Davis',
+                  rating: 5,
+                  date: '2 weeks ago',
+                  text: 'Excellent condition and fast response. Highly recommended!'
+              }
+          ];
+          
+          if (reviews.length > 0) {
+              container.innerHTML = reviews.map(review => `
+                  <div class="review-card">
+                      <div class="review-header">
+                          <div class="reviewer-info">
+                              <div class="reviewer-avatar">${review.reviewer.split(' ').map(n => n[0]).join('')}</div>
+                              <div>
+                                  <div class="reviewer-name">${review.reviewer}</div>
+                                  <div class="review-date">${review.date}</div>
+                              </div>
+                          </div>
+                          <div class="review-rating">
+                              ${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}
+                          </div>
                       </div>
+                      <div class="review-text">${review.text}</div>
                   </div>
-                  <div class="review-rating">
-                      ${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}
-                  </div>
-              </div>
-              <div class="review-text">${review.text}</div>
-          </div>
-      `).join('');
+              `).join('');
+          } else {
+              container.innerHTML = '<div class="empty-state">No reviews yet.</div>';
+          }
+      } catch (error) {
+          console.error('Error fetching reviews:', error);
+          container.innerHTML = '<div class="error-state">Could not load reviews. Please try again later.</div>';
+      }
   }
 
   // Wishlist Functionality
@@ -2033,34 +2882,8 @@ const appData = {
       });
   }
 
-  // Enhanced Product Card with Wishlist
-  function createProductCard(product) {
-      const isWishlisted = wishlist.includes(product.id);
-      return `
-          <div class="product-card hover-lift" onclick="showProductModal(${product.id})">
-              <button class="wishlist-btn ${isWishlisted ? 'active' : ''}" 
-                      data-product-id="${product.id}" 
-                      onclick="event.stopPropagation(); toggleWishlist(${product.id})">
-                  ${isWishlisted ? '❤️' : '🤍'}
-              </button>
-              <div class="product-image">${product.image}</div>
-              <div class="product-content">
-                  <div class="product-title">${product.title}</div>
-                  <div class="product-price">
-                      <span class="price-current">₹${product.price.toLocaleString()}</span>
-                      ${product.originalPrice ? `<span class="price-original">₹${product.originalPrice.toLocaleString()}</span>` : ''}
-                  </div>
-                  <div class="product-seller">
-                      <span class="seller-info">${product.seller || 'You'} ${product.year ? '• ' + product.year : ''}</span>
-                      <span class="product-condition">${product.condition}</span>
-                  </div>
-                  <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm); margin-top: var(--space-4);">
-                      📍 ${product.location || 'Campus'} • ${product.posted}
-                  </div>
-              </div>
-          </div>
-      `;
-  }
+  // This function is now replaced by the main createProductCard function above
+  // Keeping this comment as a reference
 
   // Loading States
   function addLoadingStates() {

@@ -83,36 +83,93 @@
         </div>
     </div>
     
-    <script>
-        // Tab switching functionality
-        document.getElementById('loginTab').addEventListener('click', function() {
-            document.getElementById('loginTab').classList.add('active');
-            document.getElementById('signupTab').classList.remove('active');
-            document.getElementById('loginForm').style.display = 'flex';
-            document.getElementById('signupForm').style.display = 'none';
-        });
+   <script src="api.js"></script>
+<script>
+// Tab switching
+document.getElementById('loginTab').addEventListener('click', function() {
+    document.getElementById('loginTab').classList.add('active');
+    document.getElementById('signupTab').classList.remove('active');
+    document.getElementById('loginForm').style.display = 'flex';
+    document.getElementById('signupForm').style.display = 'none';
+});
+
+document.getElementById('signupTab').addEventListener('click', function() {
+    document.getElementById('signupTab').classList.add('active');
+    document.getElementById('loginTab').classList.remove('active');
+    document.getElementById('signupForm').style.display = 'flex';
+    document.getElementById('loginForm').style.display = 'none';
+});
+
+// Check if user is already logged in
+if (API.Auth.isAuthenticated()) {
+    window.location.href = 'index.html'; // redirect to dashboard if already logged in
+}
+
+// LOGIN
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    // Show loading state
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.textContent;
+    submitBtn.textContent = 'Logging in...';
+    submitBtn.disabled = true;
+    
+    try {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+
+        const response = await API.Auth.login({ email, password });
         
-        document.getElementById('signupTab').addEventListener('click', function() {
-            document.getElementById('signupTab').classList.add('active');
-            document.getElementById('loginTab').classList.remove('active');
-            document.getElementById('signupForm').style.display = 'flex';
-            document.getElementById('loginForm').style.display = 'none';
-        });
+        // Success message
+        alert('Login successful!');
+        window.location.href = 'index.html'; // redirect to dashboard
+    } catch (error) {
+        // Error handling
+        alert(error.message || 'Login failed. Please try again.');
+    } finally {
+        // Reset button state
+        submitBtn.textContent = originalBtnText;
+        submitBtn.disabled = false;
+    }
+});
+
+// SIGNUP
+document.getElementById('signupForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    // Show loading state
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.textContent;
+    submitBtn.textContent = 'Creating account...';
+    submitBtn.disabled = true;
+    
+    try {
+        const name = document.getElementById('signupFullName').value;
+        const email = document.getElementById('signupEmail').value;
+        const password = document.getElementById('signupPassword').value;
+        const confirmPassword = document.getElementById('signupConfirmPassword').value;
+        const college = document.getElementById('signupCollege').value;
+
+        if(password !== confirmPassword){
+            throw new Error("Passwords do not match");
+        }
+
+        await API.Auth.register({ name, email, password, college });
         
-        // Form submission handling
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            // Here you would normally handle the login API call
-            alert('Login functionality would be implemented here');
-            window.location.href = 'index.html';
-        });
-        
-        document.getElementById('signupForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            // Here you would normally handle the signup API call
-            alert('Signup functionality would be implemented here');
-            window.location.href = 'index.html';
-        });
-    </script>
+        // Success message
+        alert('Signup successful! You can now login.');
+        document.getElementById('loginTab').click(); // switch to login tab
+    } catch (error) {
+        // Error handling
+        alert(error.message || 'Signup failed. Please try again.');
+    } finally {
+        // Reset button state
+        submitBtn.textContent = originalBtnText;
+        submitBtn.disabled = false;
+    }
+});
+</script>
+
 </body>
 </html>
